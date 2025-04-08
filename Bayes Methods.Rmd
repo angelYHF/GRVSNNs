@@ -1,0 +1,791 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-03-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+# load
+library(data.table)   # 
+library(readr)        # 
+library(BGLR)         # Bayesian
+library(dplyr)        # 
+
+# install
+#install.packages("BGLR", dependencies=TRUE)  #
+library(BGLR)
+
+# read data
+mice_data <- fread(" ", header = FALSE, stringsAsFactors = FALSE)
+loadings_data <- fread("  ", header = TRUE, stringsAsFactors = FALSE)
+
+if (nrow(mice_data) != nrow(loadings_data)) {
+  stop("It does not match, please check the data!")
+}
+
+# the response variables, for the mice data - the first two columns
+y <- as.matrix(mice_data[, 1:2])  # 
+
+# loadings data
+X <- apply(loadings_data, 2, function(col) as.numeric(Re(as.complex(col))))
+
+# normalization
+X_scaled <- scale(X)
+
+# BL
+ETA <- list(list(X = X_scaled, model = "BL"))
+
+# 
+resCov <- list(
+  type = "UN",   # 
+  df0 = 5,       # 
+  S0 = NULL      # 
+)
+
+# Multitrait 
+fm <- Multitrait(
+  y = y, 
+  ETA = ETA, 
+  intercept = TRUE,    # 
+  resCov = resCov,     # 
+  R2 = 0.5,            # 
+  nIter = 2000,        # iterations
+  burnIn = 500,        # burn in, it can be changed accordingly
+  thin = 10,           # 
+  saveAt = "BLasso_",  # 
+  verbose = TRUE       # 
+)
+
+
+y_pred <- fm$yHat
+
+# transfermation and save
+y_pred_df <- data.frame(Predicted_Col1 = y_pred[,1], Predicted_Col2 = y_pred[,2])
+write.csv(y_pred_df, "Multitrait_BLasso_Predictions.csv", row.names=FALSE)
+
+# print and check
+print(head(y_pred_df))
+
+```
+```{r}
+# read the data
+mice_data <- fread(" ", header = FALSE, stringsAsFactors = FALSE)
+loadings_data <- fread(" ", header = TRUE, stringsAsFactors = FALSE)
+
+# 
+cat("mice_data number of rows:", nrow(mice_data), "\n")
+cat("loadings_data number of rows:", nrow(loadings_data), "\n")
+
+```
+
+
+```{r}
+# check
+extra_row <- setdiff(1:nrow(mice_data), 1:nrow(loadings_data))
+print(paste("mice_data vs. loadings_data: ", extra_row))
+
+# remove the extra rows
+mice_data <- mice_data[-1814, ]
+
+# check again
+cat("num_mice_data:", nrow(mice_data), "\n")
+cat("final_loadings_data:", nrow(loadings_data), "\n")
+
+if (nrow(mice_data) == nrow(loadings_data)) {
+  print(" it is ok, continue to do analysis!")
+} else {
+  stop("check it againn please!")
+}
+
+```
+
+
+```{r}
+# 
+y <- as.matrix(mice_data[, 1:2])  # 
+
+# 
+X <- apply(loadings_data, 2, function(col) as.numeric(Re(as.complex(col))))
+
+# normalization
+X_scaled <- scale(X)
+
+# BL
+ETA <- list(list(X = X_scaled, model = "BL"))
+
+# 
+resCov <- list(
+  type = "UN",   # 
+  df0 = 5,       # 
+  S0 = NULL      # 
+)
+
+
+
+```
+
+
+```{r}
+str(mice_data[, 1:2])
+
+```
+
+```{r}
+y <- as.matrix(apply(mice_data[, 1:2], 2, as.numeric))
+str(y)
+
+
+# 
+extract_real_part <- function(x) {
+  as.numeric(gsub("\\(?(.*)\\+0j\\)?", "\\1", x))  # 
+}
+
+# 
+y <- apply(mice_data[, 1:2], 2, extract_real_part)
+
+# 
+y <- as.matrix(y)
+
+# 
+str(y)
+
+
+sum(is.na(y))  # 
+
+# 
+y[is.na(y)] <- mean(y, na.rm = TRUE)
+
+```
+
+```{r}
+for (i in 1:ncol(y)) {
+  y[is.na(y[, i]), i] <- mean(y[, i], na.rm = TRUE)
+}
+
+
+sum(is.na(y))  # 
+
+```
+
+```{r}
+ETA <- list(list(X = X_scaled, model = "BRR"))  # 
+
+```
+
+
+```{r}
+cat("y dim:", dim(y), "\n")  # (1813, 2) for the mice data
+cat("X_scaled dim:", dim(X_scaled), "\n")  # for example: mice (1813, [])
+
+```
+
+```{r}
+file.remove(list.files(pattern = "BLasso_.*\\.dat"))
+
+```
+
+```{r}
+X_scaled <- X_scaled[, 1:500]  # 
+cat("adjusted the dim of X_scaled:", dim(X_scaled), "\n")
+
+```
+```{r}
+X_scaled <- as.matrix(X_scaled)  # 
+y <- as.matrix(y)  # 
+
+# ensure they are numeric 
+storage.mode(X_scaled) <- "numeric"
+storage.mode(y) <- "numeric"
+
+str(X_scaled)
+str(y)
+
+```
+
+
+```{r}
+X_scaled <- X_scaled[1:nrow(y), , drop = FALSE]  
+
+cat("the final dim of X_scaled:", dim(X_scaled), "\n")
+cat("the final dim of y:", dim(y), "\n")
+
+```
+
+
+```{r}
+
+fm1 <- BGLR(
+  y = y[, 1],  #
+  ETA = list(list(X = X_scaled, model = "BL")), 
+  nIter = 2000, 
+  burnIn = 500, 
+  thin = 10, 
+  saveAt = "BLasso_trait1_",  
+  verbose = TRUE
+)
+
+
+fm2 <- BGLR(
+  y = y[, 2],  # 
+  ETA = list(list(X = X_scaled, model = "BL")), 
+  nIter = 2000, 
+  burnIn = 500, 
+  thin = 10, 
+  saveAt = "BLasso_trait2_",  
+  verbose = TRUE
+)
+
+```
+
+```{r}
+# 
+y_pred1 <- fm1$yHat  # 
+y_pred2 <- fm2$yHat  # 
+
+# 
+y_pred_df <- data.frame(Predicted_Col1 = y_pred1, Predicted_Col2 = y_pred2)
+
+# 
+write.csv(y_pred_df, "C://Users//L//Desktop//BLasso_Multitrait_Predictions_1.csv", row.names = FALSE)
+
+
+```
+
+
+
+```{r}
+# 
+X_scaled <- scale(loadings_data)  
+
+# 
+X_scaled <- as.matrix(X_scaled)  
+storage.mode(X_scaled) <- "numeric"
+
+# 
+X_scaled <- X_scaled[1:nrow(y), , drop = FALSE]
+
+# check the dim
+cat("X_scaled:", dim(X_scaled), "\n")
+cat("dim of y:", dim(y), "\n")
+
+```
+
+
+```{r}
+
+fm1 <- BGLR(
+  y = y[, 1],  # 
+  ETA = list(list(X = X_scaled, model = "BL")), 
+  nIter = 2000, 
+  burnIn = 500, 
+  thin = 10, 
+  saveAt = "BLasso_trait1_",  
+  verbose = TRUE
+)
+
+# 
+fm2 <- BGLR(
+  y = y[, 2],  
+  ETA = list(list(X = X_scaled, model = "BL")), 
+  nIter = 2000, 
+  burnIn = 500, 
+  thin = 10, 
+  saveAt = "BLasso_trait2_",  
+  verbose = TRUE
+)
+
+```
+
+
+```{r}
+
+y_pred1 <- fm1$yHat  # 
+y_pred2 <- fm2$yHat  # 
+
+# 
+y_pred_df <- data.frame(Predicted_Col1 = y_pred1, Predicted_Col2 = y_pred2)
+
+# 
+write.csv(y_pred_df, "C://Users//L//Desktop//BLasso_Multitrait_AllFeatures_Predictions_2.csv", row.names = FALSE)
+
+# 
+print(head(y_pred_df))
+
+```
+
+
+
+```{r}
+#install.packages("Metrics")
+# 
+library(Metrics)  # 
+library(ggplot2)  #
+
+# read the true values（y）and the predictions（y_pred）
+y_true <- y  # 
+y_pred <- read.csv(" ")  # 
+
+# MSE
+mse_trait1 <- mse(y_true[,1], y_pred$Predicted_Col1)
+mse_trait2 <- mse(y_true[,2], y_pred$Predicted_Col2)
+
+#  R²
+r2_trait1 <- cor(y_true[,1], y_pred$Predicted_Col1)^2
+r2_trait2 <- cor(y_true[,2], y_pred$Predicted_Col2)^2
+
+# output
+cat("Trait 1: MSE =", mse_trait1, ", R² =", r2_trait1, "\n")
+cat("Trait 2: MSE =", mse_trait2, ", R² =", r2_trait2, "\n")
+
+```
+
+
+```{r}
+#
+plot1 <- ggplot(data = data.frame(y_true=y_true[,1], y_pred=y_pred$Predicted_Col1), 
+                aes(x = y_true, y = y_pred)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  geom_abline(intercept = 0, slope = 1, linetype="dashed", color="red") +
+  ggtitle("Trait 1: true values vs. predictions") +
+  xlab("True values") + ylab("predictions") +
+  theme_minimal()
+
+plot2 <- ggplot(data = data.frame(y_true=y_true[,2], y_pred=y_pred$Predicted_Col2), 
+                aes(x = y_true, y = y_pred)) +
+  geom_point(alpha = 0.5, color = "green") +
+  geom_abline(intercept = 0, slope = 1, linetype="dashed", color="red") +
+  ggtitle("Trait 2: True values vs. predictions") +
+  xlab("True values") + ylab("Predictions") +
+  theme_minimal()
+
+# show
+print(plot1)
+print(plot2)
+
+```
+
+```{r}
+# 
+library(caret)
+
+# parameters for CV
+cv_folds <- createFolds(y[,1], k = 5, list = TRUE)  # 
+
+# 
+mse_cv_trait1 <- c()
+mse_cv_trait2 <- c()
+pearson_cv_trait1 <- c()
+pearson_cv_trait2 <- c()
+
+# 
+for (i in 1:length(cv_folds)) {
+  # 
+  train_idx <- setdiff(1:nrow(y), cv_folds[[i]])
+  test_idx <- cv_folds[[i]]
+
+  X_train <- X_scaled[train_idx, ]
+  y_train <- y[train_idx, ]
+  X_test <- X_scaled[test_idx, ]
+  y_test <- y[test_idx, ]
+
+  # 
+  fm1_cv <- BGLR(y = y_train[,1], ETA = list(list(X = X_train, model = "BL")),
+                 nIter = 2000, burnIn = 500, verbose = FALSE)
+  fm2_cv <- BGLR(y = y_train[,2], ETA = list(list(X = X_train, model = "BL")),
+                 nIter = 2000, burnIn = 500, verbose = FALSE)
+
+  
+  y_pred1_cv <- predict(fm1_cv, newdata = X_test)
+  y_pred2_cv <- predict(fm2_cv, newdata = X_test)
+
+  
+  mse_cv_trait1 <- c(mse_cv_trait1, mse(y_test[,1], y_pred1_cv))
+  mse_cv_trait2 <- c(mse_cv_trait2, mse(y_test[,2], y_pred2_cv))
+
+  # pearson corelation coefficient
+  pearson_cv_trait1 <- c(pearson_cv_trait1, cor(y_test[,1], y_pred1_cv, method = "pearson"))
+  pearson_cv_trait2 <- c(pearson_cv_trait2, cor(y_test[,2], y_pred2_cv, method = "pearson"))
+}
+
+# output the results of CV
+cat("Trait 1 average MSE (5-fold CV) =", mean(mse_cv_trait1), ", Pearson =", mean(pearson_cv_trait1), "\n")
+cat("Trait 2 average MSE (5-fold CV) =", mean(mse_cv_trait2), ", Pearson =", mean(pearson_cv_trait2), "\n")
+
+
+```
+```{r}
+# cv
+for (i in 1:length(cv_folds)) {
+  # 
+  train_idx <- setdiff(1:nrow(y), cv_folds[[i]])
+  test_idx <- cv_folds[[i]]
+
+  X_train <- X_scaled[train_idx, ]
+  y_train <- y[train_idx, ]
+  X_test <- X_scaled[test_idx, ]
+  y_test <- y[test_idx, ]
+
+  # train the model
+  fm1_cv <- BGLR(y = y_train[,1], ETA = list(list(X = X_train, model = "BL")),
+                 nIter = 2000, burnIn = 500, verbose = FALSE)
+  fm2_cv <- BGLR(y = y_train[,2], ETA = list(list(X = X_train, model = "BL")),
+                 nIter = 2000, burnIn = 500, verbose = FALSE)
+
+  # 
+  y_pred1_cv <- fm1_cv$yHat[test_idx]
+  y_pred2_cv <- fm2_cv$yHat[test_idx]
+
+  
+  cat("Fold", i, ": y_test[,1] 维度 =", length(y_test[,1]), ", y_pred1_cv 维度 =", length(y_pred1_cv), "\n")
+
+  
+  mse_cv_trait1 <- c(mse_cv_trait1, mse(y_test[,1], y_pred1_cv))
+  mse_cv_trait2 <- c(mse_cv_trait2, mse(y_test[,2], y_pred2_cv))
+
+  # 
+  pearson_cv_trait1 <- c(pearson_cv_trait1, cor(y_test[,1], y_pred1_cv, method = "pearson"))
+  pearson_cv_trait2 <- c(pearson_cv_trait2, cor(y_test[,2], y_pred2_cv, method = "pearson"))
+
+  cat("Fold", i, ": it is done\n")
+}
+
+# the results for CV
+cat("Trait 1 mean MSE (5-fold CV) =", mean(mse_cv_trait1), ", Pearson =", mean(pearson_cv_trait1), "\n")
+cat("Trait 2 mean MSE (5-fold CV) =", mean(mse_cv_trait2), ", Pearson =", mean(pearson_cv_trait2), "\n")
+
+```
+
+```{r}
+cat("Fold", i, ": If there are values like  NA =", sum(is.na(y_pred1_cv)), "\n")
+cat("Fold", i, ": If there are values like NA =", sum(is.na(y_test[,1])), "\n")
+
+valid_idx1 <- !is.na(y_pred1_cv) & !is.na(y_test[,1])
+valid_idx2 <- !is.na(y_pred2_cv) & !is.na(y_test[,2])
+
+mse_cv_trait1 <- c(mse_cv_trait1, mse(y_test[valid_idx1, 1], y_pred1_cv[valid_idx1]))
+mse_cv_trait2 <- c(mse_cv_trait2, mse(y_test[valid_idx2, 2], y_pred2_cv[valid_idx2]))
+
+pearson_cv_trait1 <- c(pearson_cv_trait1, cor(y_test[valid_idx1, 1], y_pred1_cv[valid_idx1], method = "pearson"))
+pearson_cv_trait2 <- c(pearson_cv_trait2, cor(y_test[valid_idx2, 2], y_pred2_cv[valid_idx2], method = "pearson"))
+
+```
+
+```{r}
+cat("Fold", i, ": variance for the true values =", var(y_test[,1]), "\n")
+if (var(y_test[,1]) > 0) {
+  pearson_cv_trait1 <- c(pearson_cv_trait1, cor(y_test[valid_idx1, 1], y_pred1_cv[valid_idx1], method = "pearson"))
+}
+
+```
+```{r}
+
+cat("Trait 1 平均 MSE (5-fold CV) =", mean(mse_cv_trait1, na.rm = TRUE), ", Pearson =", mean(pearson_cv_trait1, na.rm = TRUE), "\n")
+cat("Trait 2 平均 MSE (5-fold CV) =", mean(mse_cv_trait2, na.rm = TRUE), ", Pearson =", mean(pearson_cv_trait2, na.rm = TRUE), "\n")
+
+
+
+#
+cv_results <- data.frame(
+  Fold = 1:length(pearson_cv_trait1),
+  MSE_Trait1 = mse_cv_trait1,
+  Pearson_Trait1 = pearson_cv_trait1,
+  MSE_Trait2 = mse_cv_trait2,
+  Pearson_Trait2 = pearson_cv_trait2
+)
+
+# 
+write.csv(cv_results, "  ", row.names = FALSE)
+
+# 
+print(cv_results)
+
+# 
+cat("Trait 1 平均 MSE (5-fold CV) =", mean(mse_cv_trait1, na.rm = TRUE), ", Pearson =", mean(pearson_cv_trait1, na.rm = TRUE), "\n")
+cat("Trait 2 平均 MSE (5-fold CV) =", mean(mse_cv_trait2, na.rm = TRUE), ", Pearson =", mean(pearson_cv_trait2, na.rm = TRUE), "\n")
+
+```
+
+
+```{r}
+cat("pearson_cv_trait1 :", length(pearson_cv_trait1), "\n")
+cat("mse_cv_trait1 :", length(mse_cv_trait1), "\n")
+cat("pearson_cv_trait2 :", length(pearson_cv_trait2), "\n")
+cat("mse_cv_trait2 :", length(mse_cv_trait2), "\n")
+
+```
+
+```{r}
+min_length <- min(length(mse_cv_trait1), length(pearson_cv_trait1), length(mse_cv_trait2), length(pearson_cv_trait2))
+
+mse_cv_trait1 <- mse_cv_trait1[1:min_length]
+pearson_cv_trait1 <- pearson_cv_trait1[1:min_length]
+mse_cv_trait2 <- mse_cv_trait2[1:min_length]
+pearson_cv_trait2 <- pearson_cv_trait2[1:min_length]
+
+cat("Adjusted the length of pearson_cv_trait1:", length(pearson_cv_trait1), "\n")
+cat("Adjusted the length of mse_cv_trait1:", length(mse_cv_trait1), "\n")
+
+```
+
+```{r}
+# When calculate the r, please consider the influence of NA values
+if (var(y_test[,1]) > 0 && !any(is.na(y_pred1_cv))) {
+  pearson_cv_trait1 <- c(pearson_cv_trait1, cor(y_test[,1], y_pred1_cv, method = "pearson"))
+} else {
+  pearson_cv_trait1 <- c(pearson_cv_trait1, NA)
+}
+
+if (var(y_test[,2]) > 0 && !any(is.na(y_pred2_cv))) {
+  pearson_cv_trait2 <- c(pearson_cv_trait2, cor(y_test[,2], y_pred2_cv, method = "pearson"))
+} else {
+  pearson_cv_trait2 <- c(pearson_cv_trait2, NA)
+}
+
+if (!any(is.na(y_test[,1])) && !any(is.na(y_pred1_cv))) {
+  mse_cv_trait1 <- c(mse_cv_trait1, mse(y_test[,1], y_pred1_cv))
+} else {
+  mse_cv_trait1 <- c(mse_cv_trait1, NA)
+}
+
+if (!any(is.na(y_test[,2])) && !any(is.na(y_pred2_cv))) {
+  mse_cv_trait2 <- c(mse_cv_trait2, mse(y_test[,2], y_pred2_cv))
+} else {
+  mse_cv_trait2 <- c(mse_cv_trait2, NA)
+}
+
+cat("MSE Trait1 NA ratio:", sum(is.na(mse_cv_trait1)) / length(mse_cv_trait1), "\n")
+cat("Pearson Trait1 NA ratio:", sum(is.na(pearson_cv_trait1)) / length(pearson_cv_trait1), "\n")
+cat("MSE Trait2 NA ratio:", sum(is.na(mse_cv_trait2)) / length(mse_cv_trait2), "\n")
+cat("Pearson Trait2 NA ratio:", sum(is.na(pearson_cv_trait2)) / length(pearson_cv_trait2), "\n")
+
+```
+
+
+```{r}
+cv_results <- data.frame(
+  Fold = 1:length(mse_cv_trait1),
+  MSE_Trait1 = mse_cv_trait1,
+  Pearson_Trait1 = pearson_cv_trait1,
+  MSE_Trait2 = mse_cv_trait2,
+  Pearson_Trait2 = pearson_cv_trait2
+)
+
+write.csv(cv_results, "", row.names = FALSE)
+print(cv_results)
+
+
+```
+```{r}
+cat("Fold", i, ": y_test[,1] NA numbers =", sum(is.na(y_test[,1])), ", y_pred1_cv NA numbers =", sum(is.na(y_pred1_cv)), "\n")
+cat("Fold", i, ": y_test[,2] NA numbers =", sum(is.na(y_test[,2])), ", y_pred2_cv NA numbers =", sum(is.na(y_pred2_cv)), "\n")
+
+```
+
+```{r}
+# check
+if (!any(is.na(y_pred1_cv)) && var(y_test[,1], na.rm = TRUE) > 0) {
+  pearson_cv_trait1 <- c(pearson_cv_trait1, cor(y_test[,1], y_pred1_cv, use = "complete.obs", method = "pearson"))
+} else {
+  pearson_cv_trait1 <- c(pearson_cv_trait1, NA)
+}
+
+if (!any(is.na(y_pred2_cv)) && var(y_test[,2], na.rm = TRUE) > 0) {
+  pearson_cv_trait2 <- c(pearson_cv_trait2, cor(y_test[,2], y_pred2_cv, use = "complete.obs", method = "pearson"))
+} else {
+  pearson_cv_trait2 <- c(pearson_cv_trait2, NA)
+}
+
+```
+
+```{r}
+# 
+valid_idx1 <- !is.na(y_pred1_cv)
+valid_idx2 <- !is.na(y_pred2_cv)
+
+# 
+mse_cv_trait1 <- c(mse_cv_trait1, ifelse(any(valid_idx1), mse(y_test[valid_idx1, 1], y_pred1_cv[valid_idx1]), NA))
+mse_cv_trait2 <- c(mse_cv_trait2, ifelse(any(valid_idx2), mse(y_test[valid_idx2, 2], y_pred2_cv[valid_idx2]), NA))
+
+# 
+pearson_cv_trait1 <- c(pearson_cv_trait1, ifelse(any(valid_idx1) && var(y_test[valid_idx1, 1]) > 0,
+                                                 cor(y_test[valid_idx1, 1], y_pred1_cv[valid_idx1], method = "pearson"),
+                                                 NA))
+pearson_cv_trait2 <- c(pearson_cv_trait2, ifelse(any(valid_idx2) && var(y_test[valid_idx2, 2]) > 0,
+                                                 cor(y_test[valid_idx2, 2], y_pred2_cv[valid_idx2], method = "pearson"),
+                                                 NA))
+# 
+min_length <- min(length(mse_cv_trait1), length(pearson_cv_trait1), length(mse_cv_trait2), length(pearson_cv_trait2))
+
+# 
+mse_cv_trait1 <- mse_cv_trait1[1:min_length]
+pearson_cv_trait1 <- pearson_cv_trait1[1:min_length]
+mse_cv_trait2 <- mse_cv_trait2[1:min_length]
+pearson_cv_trait2 <- pearson_cv_trait2[1:min_length]
+
+# 
+cat("the final lenger: ", min_length, "\n")
+
+```
+```{r}
+cv_results <- data.frame(
+  Fold = 1:min_length,
+  MSE_Trait1 = mse_cv_trait1,
+  Pearson_Trait1 = pearson_cv_trait1,
+  MSE_Trait2 = mse_cv_trait2,
+  Pearson_Trait2 = pearson_cv_trait2
+)
+
+# 
+write.csv(cv_results, "BLasso_CV_Results_Cleaned.csv", row.names = FALSE)
+print(cv_results)
+
+# 
+cat("Trait 1 average r =", mean(pearson_cv_trait1, na.rm = TRUE), "\n")
+cat("Trait 2 avrage r =", mean(pearson_cv_trait2, na.rm = TRUE), "\n")
+
+```
+
+
+```{r}
+#other models like BRR
+ETA <- list(list(X = X_scaled, model = "BRR"))  # 贝叶斯岭回归
+# other moels like BayesB
+ETA <- list(list(X = X_scaled, model = "BayesB"))  # 贝叶斯B
+
+```
+
+```{r}
+# BRR
+fm1_BRR <- BGLR(
+  y = y[, 1],  
+  ETA = list(list(X = X_scaled, model = "BRR")),  
+  nIter = 2000,  
+  burnIn = 500,  
+  thin = 10,  
+  saveAt = "BRR_trait1_",  
+  verbose = TRUE  
+)
+
+fm2_BRR <- BGLR(
+  y = y[, 2],  
+  ETA = list(list(X = X_scaled, model = "BRR")),  
+  nIter = 2000,  
+  burnIn = 500,  
+  thin = 10,  
+  saveAt = "BRR_trait2_",  
+  verbose = TRUE  
+)
+
+```
+
+
+```{r}
+# BayesB
+fm1_BayesB <- BGLR(
+  y = y[, 1],  
+  ETA = list(list(X = X_scaled, model = "BayesB")),  
+  nIter = 2000,  
+  burnIn = 500,  
+  thin = 10,  
+  saveAt = "BayesB_trait1_",  
+  verbose = TRUE  
+)
+
+fm2_BayesB <- BGLR(
+  y = y[, 2],  
+  ETA = list(list(X = X_scaled, model = "BayesB")),  
+  nIter = 2000,  
+  burnIn = 500,  
+  thin = 10,  
+  saveAt = "BayesB_trait2_",  
+  verbose = TRUE  
+)
+
+```
+
+```{r}
+# 
+pearson_BRR_trait1 <- cor(y[,1], fm1_BRR$yHat, method = "pearson")
+pearson_BRR_trait2 <- cor(y[,2], fm2_BRR$yHat, method = "pearson")
+
+# 
+pearson_BayesB_trait1 <- cor(y[,1], fm1_BayesB$yHat, method = "pearson")
+pearson_BayesB_trait2 <- cor(y[,2], fm2_BayesB$yHat, method = "pearson")
+
+# 
+cat("BRR Trait 1  r =", pearson_BRR_trait1, "\n")
+cat("BRR Trait 2 r =", pearson_BRR_trait2, "\n")
+cat("BayesB Trait 1 r =", pearson_BayesB_trait1, "\n")
+cat("BayesB Trait 2 r =", pearson_BayesB_trait2, "\n")
+
+```
+
+
+```{r}
+# For BRR
+mse_BRR_trait1 <- mean((y[,1] - fm1_BRR$yHat)^2)
+mse_BRR_trait2 <- mean((y[,2] - fm2_BRR$yHat)^2)
+
+# For BayesB
+mse_BayesB_trait1 <- mean((y[,1] - fm1_BayesB$yHat)^2)
+mse_BayesB_trait2 <- mean((y[,2] - fm2_BayesB$yHat)^2)
+
+# Output
+cat("BRR Trait 1 (test set) MSE =", mse_BRR_trait1, "\n")
+cat("BRR Trait 2 (test set) MSE =", mse_BRR_trait2, "\n")
+cat("BayesB Trait 1 (test set) MSE =", mse_BayesB_trait1, "\n")
+cat("BayesB Trait 2 (test set) MSE =", mse_BayesB_trait2, "\n")
+
+```
+
+```{r}
+# BayesC
+fm1_BayesC <- BGLR(
+  y = y[, 1],  
+  ETA = list(list(X = X_scaled, model = "BayesC")),  
+  nIter = 2000,  
+  burnIn = 500,  
+  thin = 10,  
+  saveAt = "BayesC_trait1_",  
+  verbose = TRUE  
+)
+
+fm2_BayesC <- BGLR(
+  y = y[, 2],  
+  ETA = list(list(X = X_scaled, model = "BayesC")),  
+  nIter = 2000,  
+  burnIn = 500,  
+  thin = 10,  
+  saveAt = "BayesC_trait2_",  
+  verbose = TRUE  
+)
+
+
+```
+
+```{r}
+# 
+pearson_BayesC_trait1 <- cor(y[,1], fm1_BayesC$yHat, method = "pearson")
+pearson_BayesC_trait2 <- cor(y[,2], fm2_BayesC$yHat, method = "pearson")
+
+# 
+cat("BayesC Trait 1 r =", pearson_BayesC_trait1, "\n")
+cat("BayesC Trait 2 r =", pearson_BayesC_trait2, "\n")
+
+
+# 
+mse_BayesC_trait1 <- mean((y[,1] - fm1_BayesC$yHat)^2)
+mse_BayesC_trait2 <- mean((y[,2] - fm2_BayesC$yHat)^2)
+
+# 
+cat("BayesC Trait 1 (test set) MSE =", mse_BayesC_trait1, "\n")
+cat("BayesC Trait 2 (test set) MSE =", mse_BayesC_trait2, "\n")
+
+```
+
