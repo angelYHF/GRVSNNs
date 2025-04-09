@@ -20,10 +20,7 @@ py_install("scikit-learn")
 #path for GRVSNNs.py, loadings.py
 source_python(" ")
 
-#print
-
-
-
+#print the results
 
 
 
