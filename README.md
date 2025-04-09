@@ -1,6 +1,31 @@
 This code repository includes the source code for the paper about GRVSNNs, other Bayesian models (BLasso, BRR, BayesCpi), and LassoNet.
 
-The experimental framework (GRVSNNs) is based on Python. however, the proposed model is implemented model can be implemented in Colab envrionment with some packages. The current version is implemented in Colab envrionment, if you choose the other environment, it should be easy to transfer also. I will provide the R version for this GRVSNNs quite soon.
+The experimental framework (GRVSNNs) is based on Python. however, the proposed model is implemented model can be implemented in Colab envrionment with some packages. The current version is implemented in Colab envrionment, if you choose the other environment, it should be easy to transfer also. For the R, you can call Python from R. The steps are as follows:
+
+install.packages("reticulate") #install reticulate package provided by R
+
+library(reticulate)
+os <- import("os")
+os
+os$listdir(".") #check files in the current path
+
+
+#install packages needed 
+py_install("pandas")
+py_install("numpy")
+py_install("bayesian-optimization")
+py_install("tensorflow")
+py_install("scikit-learn")
+
+#path for GRVSNNs.py, loadings.py
+source_python(" ")
+
+#print
+
+
+
+
+
 
 For the Bayes Methods: BLasso, BayesCpi, BRR.
 
