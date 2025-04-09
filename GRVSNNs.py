@@ -50,7 +50,7 @@
    },
    "outputs": [],
    "source": [
-    "!pip install bayesian-optimization"
+    ""
    ]
   },
   {
