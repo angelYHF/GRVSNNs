@@ -22,8 +22,6 @@ source_python(" ")
 
 #print the results
 
-
-
 For the Bayes Methods: BLasso, BayesCpi, BRR.
 
 For the code Bayes Methods, there are several Bayes methods exclude three methods we showed above. There are also BayesB, BayesC methods. So please check the code carefully what kind of method you want to use. Because there are some calculations about loadings, there are different kinds of checks that need to do.
