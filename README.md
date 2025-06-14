@@ -8,7 +8,7 @@ install.packages("reticulate")
 
 **steps for the anaconda environment setup:
 
-Start menu  Anaconda Promtopen and then run the environment setup as:
+Start menu --> Anaconda Promtopen and then run the environment setup as:
 
 1. conda create -n tf_r_env python=3.9
 2. conda activate tf_r_env
@@ -34,13 +34,14 @@ install packages(“reticulate”)
 library(reticulate)
 use_condaenv("tf_r_env", required = TRUE)
 
-# Import the Python module
+#import the python module
 grvsn <- import("GRVSNNs_")
 
-# Run the pipeline (here using the correct path for the data. micedata are the examples)
+
+#run the pipeline (here mice data is the example)
 mse_result <- grvsn$run_training_pipeline(
-  loadings_path = "C:/Ppaer_1/data/loadings.csv",
-  micedata_path = "C:/Ppaer_1/data/micedata.csv"
+  loadings_path = "C:/GRVSNN/data/loadings.csv",
+  micedata_path = "C:/GRVSNN/data/micedata.csv"
 )
 print(mse_result)
 
