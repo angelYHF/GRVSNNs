@@ -41,10 +41,12 @@ grvsn <- import("GRVSNNs_")
 
 
 #run the pipeline (here mice data is the example)
+
 mse_result <- grvsn$run_training_pipeline(
   loadings_path = "C:/GRVSNN/data/loadings.csv",
   micedata_path = "C:/GRVSNN/data/micedata.csv"
 )
+
 print(mse_result)
 
 
