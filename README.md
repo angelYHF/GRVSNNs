@@ -1,26 +1,49 @@
 This code repository includes the source code for the paper about GRVSNNs, other Bayesian models (BLasso, BRR, BayesCpi), and LassoNet.
 
-The experimental framework (GRVSNNs) is based on Python. however, the proposed model is implemented model can be implemented in Colab envrionment with some packages. The current version is implemented in Colab envrionment, if you choose the other environment, it should be easy to transfer also. For the R, you can call Python from R. The steps are as follows:
+The experimental framework (GRVSNNs) is based on Python. however, the proposed model is implemented model can be implemented in Colab envrionment with some packages. The current version is implemented in Colab envrionment, if you choose the other environment, it should be easy to transfer also. 
+For the researcher who prefer to use R, we also make GRVSNNs_.py for the proposed GRVSNN model. You can call Python from R. The steps are as follows:
 
-install.packages("reticulate") #install reticulate package provided by R
+#install reticulate package provided by R
+install.packages("reticulate") 
 
+**steps for the anaconda environment setup:
+
+Start menu  Anaconda Promtopen and then run the environment setup as:
+
+1. conda create -n tf_r_env python=3.9
+2. conda activate tf_r_env
+3. pip install tensorflow==2.10.0 numpy==1.24.4 pandas scikit-learn scipy bayesian-optimization
+   
+In R (or Rstudio)
+
+1. library(reticulate)
+2. use_condaenv("tf_r_env", required = TRUE)
+3. py_config()
+4. tf <- import("tensorflow")
+5. print(tf$version)
+6. activate tf using: 
+conda activate tf_r_env
+
+install packages needed in the code
+
+pip install tensorflow==2.10.0 numpy==1.24.4 pandas scikit-learn scipy bayesian-optimization
+
+in R (or Rstudio) using the code below:
+
+install packages(“reticulate”)
 library(reticulate)
-os <- import("os")
-os
-os$listdir(".") #check files in the current path
+use_condaenv("tf_r_env", required = TRUE)
 
+# Import the Python module
+grvsn <- import("GRVSNNs_")
 
-#install packages needed 
-py_install("pandas")
-py_install("numpy")
-py_install("bayesian-optimization")
-py_install("tensorflow")
-py_install("scikit-learn")
+# Run the pipeline (here using the correct path for the data. micedata are the examples)
+mse_result <- grvsn$run_training_pipeline(
+  loadings_path = "C:/Ppaer_1/data/loadings.csv",
+  micedata_path = "C:/Ppaer_1/data/micedata.csv"
+)
+print(mse_result)
 
-#path for GRVSNNs.py, loadings.py
-source_python(" ")
-
-#print the results
 
 For the Bayes Methods: BLasso, BayesCpi, BRR.
 
@@ -43,7 +66,7 @@ Usage:
 The current code is using the Colab environment, you can download the data accordingly and run the code step by step. Or you can run the code using your own Python environment.
 
 Contact:
-For any question, you can contact angelfyh@gmail.com
+For any question, please can contact angelfyh@gmail.com
 
 Citation:
 
