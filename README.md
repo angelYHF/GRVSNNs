@@ -33,10 +33,13 @@ pip install tensorflow==2.10.0 numpy==1.24.4 pandas scikit-learn scipy bayesian-
 in R (or Rstudio) using the code below:
 
 install packages(“reticulate”)
+
 library(reticulate)
+
 use_condaenv("tf_r_env", required = TRUE)
 
 #import the python module
+
 grvsn <- import("GRVSNNs_")
 
 
