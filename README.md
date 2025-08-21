@@ -73,9 +73,21 @@ Usage:
 
 The current code is using the Colab environment, you can download the data accordingly and run the code step by step. Or you can run the code using your own Python environment.
 
+
+Here is the Julia version for GRVSNN: https://github.com/patwa67/GRVSNN. This new repository provides two Julia files for Gated Residual Variable Selection Neural Networks. GRVSNNClass.jl performs classification of a target (output) variable that can contain either binary or multi-class labels. This code is an extension of our paper: Fan, Y. and Waldmann, P. (2025). Multi-task genomic prediction using gated residual variable selection neural networks. BMC Bioinformatics 26: 167. The code is very automatic and easy to use.
+
+
 Contact:
 For any question, please can contact angelfyh@gmail.com
 
 Citation:
-
-It is coming ....
+@article{fan2025multi,
+  title={Multi-task genomic prediction using gated residual variable selection neural networks},
+  author={Fan, Yuhua and Waldmann, Patrik},
+  journal={BMC bioinformatics},
+  volume={26},
+  number={1},
+  pages={167},
+  year={2025},
+  publisher={Springer}
+}
